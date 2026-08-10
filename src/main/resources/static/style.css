@@ -1,0 +1,270 @@
+/* ============ RedConnect - Glassmorphism Login Theme ============ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.25);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --text: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.7);
+    --accent: #ff5f6d;
+    --accent-2: #ffc371;
+    --danger: #ff4d6d;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body.glass-body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 35%, #6d28d9 70%, #db2777 100%);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Decorative blurred orbs */
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.55;
+    animation: float 12s ease-in-out infinite;
+    z-index: 0;
+}
+
+.orb-1 {
+    width: 340px;
+    height: 340px;
+    background: radial-gradient(circle, #ff6b6b, #ee5a24);
+    top: -80px;
+    left: -80px;
+}
+
+.orb-2 {
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, #4facfe, #00f2fe);
+    bottom: -120px;
+    right: -100px;
+    animation-delay: -4s;
+}
+
+.orb-3 {
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, #a18cd1, #fbc2eb);
+    top: 45%;
+    left: 60%;
+    animation-delay: -8s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(-40px) translateX(30px); }
+}
+
+/* Glass card */
+.glass-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 36px;
+    border-radius: 24px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+.glass-brand {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.glass-brand .drop {
+    font-size: 44px;
+    display: block;
+    filter: drop-shadow(0 4px 12px rgba(255, 0, 60, 0.5));
+}
+
+.glass-brand h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+}
+
+.glass-brand p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* Form fields */
+.field {
+    margin-bottom: 18px;
+}
+
+.field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    margin-bottom: 7px;
+    color: var(--text-muted);
+}
+
+.field input {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+}
+
+.field input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.field input:focus {
+    border-color: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+.field input.invalid {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.25);
+}
+
+.error-msg {
+    display: block;
+    min-height: 16px;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #ffb3c1;
+}
+
+.error-msg.form-error {
+    margin: 4px 0 14px;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn-glass {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.25s, background 0.25s;
+}
+
+.btn-glass:hover {
+    transform: translateY(-2px);
+}
+
+.btn-glass:active {
+    transform: translateY(0);
+}
+
+.btn-glass:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(255, 95, 109, 0.4);
+    margin-top: 6px;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 10px 26px rgba(255, 95, 109, 0.55);
+}
+
+.btn-ghost {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Misc */
+.auth-alt {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: #ffd9a0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.logged-in {
+    margin-top: 22px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(46, 204, 113, 0.18);
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    font-size: 14px;
+    text-align: center;
+}
+
+.logged-in .link-btn {
+    color: #fff;
+    margin-left: 8px;
+}

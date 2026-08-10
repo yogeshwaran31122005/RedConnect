@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | RedConnect</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="glass-body">
+
+    <!-- Decorative blurred orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <main class="glass-card">
+        <div class="glass-brand">
+            <span class="drop">🩸</span>
+            <h1>Create Account</h1>
+            <p>Join RedConnect in 30 seconds</p>
+        </div>
+
+        <form id="registerForm" novalidate>
+            <div class="field">
+                <label for="email">User ID (Email)</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email"
+                       autocomplete="email" autofocus>
+                <small class="error-msg" id="emailError"></small>
+            </div>
+
+            <div class="field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password"
+                       placeholder="At least 6 characters" autocomplete="new-password">
+                <small class="error-msg" id="passwordError"></small>
+            </div>
+
+            <div class="field">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword"
+                       placeholder="Re-enter your password" autocomplete="new-password">
+                <small class="error-msg" id="confirmError"></small>
+            </div>
+
+            <div class="error-msg form-error" id="formError"></div>
+
+            <button type="submit" class="btn-glass btn-primary" id="registerBtn">Create Account</button>
+        </form>
+
+        <p class="auth-alt">Already have an account? <a href="login.html" class="link-btn">Login</a></p>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
