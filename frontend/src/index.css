@@ -1,4 +1,4 @@
-/* ============ RedConnect - Glassmorphism Login Theme ============ */
+/* ============ RedConnect - Glassmorphism Theme (React) ============ */
 
 * {
     margin: 0;
@@ -15,6 +15,9 @@
     --accent: #ff5f6d;
     --accent-2: #ffc371;
     --danger: #ff4d6d;
+    --success-bg: rgba(46, 204, 113, 0.18);
+    --success-border: rgba(46, 204, 113, 0.4);
+    --font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 html,
@@ -22,8 +25,8 @@ body {
     height: 100%;
 }
 
-body.glass-body {
-    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+body {
+    font-family: var(--font-family);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -35,14 +38,23 @@ body.glass-body {
     position: relative;
 }
 
-/* Decorative blurred orbs */
+#root {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* ---- Decorative blurred orbs ---- */
 .orb {
-    position: absolute;
+    position: fixed;
     border-radius: 50%;
     filter: blur(80px);
     opacity: 0.55;
     animation: float 12s ease-in-out infinite;
     z-index: 0;
+    pointer-events: none;
 }
 
 .orb-1 {
@@ -76,7 +88,19 @@ body.glass-body {
     50% { transform: translateY(-40px) translateX(30px); }
 }
 
-/* Glass card */
+/* ---- Fade-in animation ---- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---- Glass card ---- */
 .glass-card {
     position: relative;
     z-index: 1;
@@ -89,6 +113,7 @@ body.glass-body {
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
+    animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .glass-brand {
@@ -100,22 +125,33 @@ body.glass-body {
     font-size: 44px;
     display: block;
     filter: drop-shadow(0 4px 12px rgba(255, 0, 60, 0.5));
+    animation: pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
 }
 
 .glass-brand h1 {
     font-size: 26px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.5px;
     margin-top: 6px;
+    background: linear-gradient(135deg, #ffffff, #ffc371);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .glass-brand p {
     color: var(--text-muted);
     font-size: 14px;
     margin-top: 4px;
+    font-weight: 500;
 }
 
-/* Form fields */
+/* ---- Form fields ---- */
 .field {
     margin-bottom: 18px;
 }
@@ -137,6 +173,7 @@ body.glass-body {
     background: rgba(255, 255, 255, 0.12);
     color: var(--text);
     font-size: 15px;
+    font-family: var(--font-family);
     outline: none;
     transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
 }
@@ -162,6 +199,7 @@ body.glass-body {
     margin-top: 5px;
     font-size: 12px;
     color: #ffb3c1;
+    font-weight: 500;
 }
 
 .error-msg.form-error {
@@ -170,7 +208,7 @@ body.glass-body {
     font-weight: 600;
 }
 
-/* Buttons */
+/* ---- Buttons ---- */
 .btn-glass {
     width: 100%;
     padding: 14px;
@@ -178,16 +216,17 @@ body.glass-body {
     border-radius: 12px;
     font-size: 15px;
     font-weight: 700;
+    font-family: var(--font-family);
     letter-spacing: 0.5px;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.25s, background 0.25s;
+    transition: transform 0.15s, box-shadow 0.25s, background 0.25s, opacity 0.25s;
 }
 
-.btn-glass:hover {
+.btn-glass:hover:not(:disabled) {
     transform: translateY(-2px);
 }
 
-.btn-glass:active {
+.btn-glass:active:not(:disabled) {
     transform: translateY(0);
 }
 
@@ -204,7 +243,7 @@ body.glass-body {
     margin-top: 6px;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     box-shadow: 0 10px 26px rgba(255, 95, 109, 0.55);
 }
 
@@ -214,8 +253,30 @@ body.glass-body {
     border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.22);
+}
+
+/* ---- Spinner for loading buttons ---- */
+.btn-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-spinner::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .divider {
@@ -235,12 +296,23 @@ body.glass-body {
     background: rgba(255, 255, 255, 0.25);
 }
 
-/* Misc */
+/* ---- Misc ---- */
 .auth-alt {
     text-align: center;
     margin-top: 18px;
     font-size: 14px;
     color: var(--text-muted);
+}
+
+.auth-alt a {
+    color: #ffd9a0;
+    font-weight: 700;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.auth-alt a:hover {
+    color: #fff;
 }
 
 .link-btn {
@@ -252,19 +324,91 @@ body.glass-body {
     font-weight: 700;
     text-decoration: underline;
     padding: 0;
+    font-family: var(--font-family);
+    transition: color 0.2s;
+}
+
+.link-btn:hover {
+    color: #fff;
 }
 
 .logged-in {
     margin-top: 22px;
     padding: 12px 14px;
     border-radius: 12px;
-    background: rgba(46, 204, 113, 0.18);
-    border: 1px solid rgba(46, 204, 113, 0.4);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
     font-size: 14px;
     text-align: center;
+    animation: fadeInUp 0.4s ease both;
 }
 
 .logged-in .link-btn {
     color: #fff;
     margin-left: 8px;
+}
+
+/* ---- Toast notification ---- */
+.toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 1000;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.toast-success {
+    background: rgba(46, 204, 113, 0.85);
+    border: 1px solid rgba(46, 204, 113, 0.5);
+}
+
+.toast-error {
+    background: rgba(255, 77, 109, 0.85);
+    border: 1px solid rgba(255, 77, 109, 0.5);
+}
+
+.toast-exit {
+    animation: slideOut 0.3s ease-in both;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(60px) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) translateY(0);
+    }
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(60px) translateY(-10px);
+    }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 480px) {
+    .glass-card {
+        padding: 30px 22px;
+        border-radius: 18px;
+    }
+
+    .glass-brand h1 {
+        font-size: 22px;
+    }
+
+    .glass-brand .drop {
+        font-size: 36px;
+    }
 }
