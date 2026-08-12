@@ -1,20 +1,23 @@
 # 🩸 RedConnect
 
-RedConnect is a Java-based blood donation system that connects patients with suitable blood donors. This repository contains the **login and user registration module** — a Spring Boot REST API backed by SQLite with a glassmorphism frontend.
+RedConnect is a blood donation platform that connects patients with suitable blood donors. It is a Spring Boot REST API backed by **PostgreSQL** with a React (Vite) glassmorphism frontend. Every feature — registration, donor profile, blood requests, notifications and donation history — stores its rows line-by-line in PostgreSQL.
 
 ## Features
 
-* User registration (email + password) — stored securely with BCrypt hashing
+* User registration with name, blood group, phone, city, DOB and gender (stored in PostgreSQL)
 * User login with email (User ID) and password
 * JWT token issued on successful login
-* Glassmorphism login and register pages (HTML + CSS + JavaScript)
-* Passwords never stored in plain text
+* Donor profile (name, blood group, contact, availability)
+* Find blood / search donors by blood group and location
+* Emergency blood requests + request status tracking
+* Notifications and donation history
+* Passwords never stored in plain text (BCrypt hashing)
 
 ## Technology
 
-* **Backend:** Spring Boot 3.5 (Java 25)
-* **Frontend:** HTML, CSS (glassmorphism), JavaScript
-* **Database:** SQLite (file-based, no server installation needed)
+* **Backend:** Spring Boot 3.5 (Java 25), Spring Data JPA, Spring Security
+* **Frontend:** React 19 + Vite (glassmorphism UI)
+* **Database:** PostgreSQL (all data stored in tables, row per record)
 * **Security:** Spring Security + JWT + BCrypt
 
 ## Folder Structure
@@ -22,77 +25,104 @@ RedConnect is a Java-based blood donation system that connects patients with sui
 ```text
 RedConnect/
 │
-├── src/
-│   ├── main/
-│   │   ├── java/com/college/redconnect/
-│   │   │   ├── RedconnectApplication.java   (entry point)
-│   │   │   ├── config/
-│   │   │   │   └── SecurityConfig.java      (JWT + Spring Security)
-│   │   │   │   └── security/
-│   │   │   │       ├── JwtUtil.java         (token generation/validation)
-│   │   │   │       └── JwtAuthFilter.java   (token filter)
-│   │   │   ├── controller/
-│   │   │   │   └── AuthController.java      (REST endpoints)
-│   │   │   ├── service/
-│   │   │   │   └── AuthService.java         (business logic)
-│   │   │   ├── repository/
-│   │   │   │   └── UserRepository.java      (Spring Data JPA)
-│   │   │   ├── model/entity/
-│   │   │   │   └── User.java                (JPA entity)
-│   │   │   ├── dto/
-│   │   │   │   ├── request/
-│   │   │   │   │   ├── LoginRequest.java
-│   │   │   │   │   └── RegisterRequest.java
-│   │   │   │   └── response/
-│   │   │   │       ├── ApiResponse.java
-│   │   │   │       ├── ErrorResponse.java
-│   │   │   │       └── LoginResponse.java
-│   │   │   └── exception/
-│   │   │       └── GlobalExceptionHandler.java
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       └── static/
-│   │           ├── index.html        (redirects to login)
-│   │           ├── login.html
-│   │           ├── register.html
-│   │           ├── style.css
-│   │           └── script.js
-│   └── test/java/com/college/redconnect/   (unit tests)
+├── backend/                          (Spring Boot REST API)
+│   ├── src/main/java/com/college/redconnect/
+│   │   ├── RedconnectApplication.java
+│   │   ├── config/                   (SecurityConfig, JWT)
+│   │   ├── controller/               (AuthController, DataController)
+│   │   ├── service/                  (AuthService, DataService)
+│   │   ├── repository/               (JPA repositories)
+│   │   ├── model/entity/             (User, BloodRequest, Donation, Notification)
+│   │   ├── dto/                      (request/response records)
+│   │   └── exception/                (global error handling)
+│   ├── src/main/resources/application.properties
+│   ├── src/test/                     (unit + integration tests)
+│   └── pom.xml
 │
-├── .env.example
-├── pom.xml
-└── README.md
+└── frontend/                         (React + Vite SPA)
+    └── src/
+        ├── pages/                    (LoginPage, RegisterPage, HomePage)
+        ├── api/                      (auth.js, data.js, mock.js fallback)
+        └── components/               (GlassLayout, FormField, Toast)
 ```
 
 ## Setup
 
-### 1. Run the application
+### 1. Create the PostgreSQL database
+
+```sql
+CREATE DATABASE redconnect;
+```
+
+Set the connection details (defaults in `application.properties`):
+
+| Env var        | Default                                |
+|----------------|----------------------------------------|
+| `DB_URL`       | `jdbc:postgresql://localhost:5432/redconnect` |
+| `DB_USERNAME`  | `postgres`                             |
+| `DB_PASSWORD`  | `postgres`                             |
+| `JWT_SECRET`   | (change in production)                 |
+
+The `users`, `blood_requests`, `donations` and `notifications` tables are created
+automatically by Hibernate (`ddl-auto=update`).
+
+### 2. Run the backend
 
 ```bash
+cd backend
 mvn spring-boot:run
 ```
 
-The app starts at <http://localhost:8080> and the SQLite database file (`redconnect.db`) is created automatically in the project root — **no database server or configuration needed**.
+API starts at <http://localhost:8080>.
 
-* Login page: <http://localhost:8080/login.html>
-* Register page: <http://localhost:8080/register.html>
+### 3. Run the frontend
 
-> Opening <http://localhost:8080/> redirects to the login page.
-> To use a custom JWT secret, set the `JWT_SECRET` environment variable (see `.env.example`).
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs at <http://localhost:5173> and proxies `/api` to the backend.
+
+### 4. Tests
+
+```bash
+cd backend
+mvn test        # runs against in-memory H2 in PostgreSQL compatibility mode
+```
 
 ## API Endpoints
 
-| Method | Endpoint            | Description                        |
-|--------|---------------------|------------------------------------|
-| POST   | `/api/auth/register`| Create a new user (email, password)|
-| POST   | `/api/auth/login`   | Login and receive a JWT token      |
+### Auth
+
+| Method | Endpoint            | Description                                    |
+|--------|---------------------|------------------------------------------------|
+| POST   | `/api/auth/register`| Create a user (name, email, password, blood group, ...) |
+| POST   | `/api/auth/login`   | Login and receive a JWT token                  |
+| GET    | `/api/auth/me`      | Current user's profile (requires token)        |
+
+### Data (all require `Authorization: Bearer <token>`)
+
+| Method | Endpoint                 | Description                            |
+|--------|--------------------------|----------------------------------------|
+| GET    | `/api/data/profile`      | Get own profile                        |
+| PUT    | `/api/data/profile`      | Update profile fields                  |
+| GET    | `/api/data/requests`     | List own blood requests                |
+| POST   | `/api/data/requests`     | Create a blood request                 |
+| PATCH  | `/api/data/requests/{id}/status` | Update request status           |
+| GET    | `/api/data/donations`    | List own donation history              |
+| POST   | `/api/data/donations`    | Record a donation                      |
+| GET    | `/api/data/notifications`| List own notifications                 |
+| POST   | `/api/data/notifications`| Create a notification                  |
+| PATCH  | `/api/data/notifications/read` | Mark all notifications as read   |
 
 ### Example — Register
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"john@example.com","password":"password123"}'
+  -d '{"fullName":"John Doe","email":"john@example.com","password":"password123","bloodGroup":"O+","phone":"+91 98410 00000","city":"Chennai"}'
 ```
 
 ### Example — Login
@@ -114,22 +144,28 @@ Successful login returns:
     "tokenType": "Bearer",
     "expiresIn": 86400000,
     "id": 1,
-    "email": "john@example.com"
+    "email": "john@example.com",
+    "fullName": "John Doe",
+    "bloodGroup": "O+",
+    "phone": "+91 98410 00000",
+    "city": "Chennai"
   }
 }
 ```
 
-## System Modules (Roadmap)
+## System Modules
 
 ```text
 RedConnect
 │
-├── Login / Register          (implemented)
-├── Donor                     (register, login, profile, availability)
-├── Patient                   (blood request, search blood, find donor)
-├── Matching                  (blood group + location matching)
-└── Admin                     (manage donors, patients, requests)
+├── Login / Register        (implemented - PostgreSQL backed)
+├── Donor                   (register, profile, availability)
+├── Patient                 (blood request, search blood, find donor)
+├── Matching                (blood group + location matching)
+└── Admin                   (manage donors, patients, requests)
 ```
+
+> Donor search and blood-bank availability are reference datasets rendered from the frontend; profile, requests, notifications and donation history are fully persisted in PostgreSQL.
 
 ## Author
 
