@@ -1,14 +1,18 @@
 package com.college.redconnect.config.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+
+import javax.crypto.SecretKey;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import com.college.redconnect.model.entity.UserRole;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
@@ -22,19 +26,29 @@ public class JwtUtil {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, UserRole role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
                 .subject(email)
+                .claim("role", role.name())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(key)
                 .compact();
     }
 
+    public String generateToken(String email) {
+        return generateToken(email, UserRole.DONOR);
+    }
+
     public String extractEmail(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    public UserRole extractRole(String token) {
+        String value = parseClaims(token).get("role", String.class);
+        return value == null ? UserRole.DONOR : UserRole.valueOf(value);
     }
 
     public boolean isValid(String token) {

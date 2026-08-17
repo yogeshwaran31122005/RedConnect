@@ -24,7 +24,10 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_PATHS = {
-            "/api/auth/**"
+            "/api/auth/register",
+            "/api/auth/login",
+            "/api/auth/admin/send-otp",
+            "/api/auth/admin/verify-otp"
     };
 
     private final JwtAuthFilter jwtAuthFilter;
