@@ -1,16 +1,17 @@
-/* GlassLayout - Shared wrapper with animated orbs + glass card */
+/* GlassLayout - Shared page wrapper with optional animated background */
 
-export default function GlassLayout({ children }) {
+export default function GlassLayout({ children, className = "", variant = "auth" }) {
     return (
-        <>
-            {/* Decorative blurred orbs */}
-            <div className="orb orb-1"></div>
-            <div className="orb orb-2"></div>
-            <div className="orb orb-3"></div>
-
-            <main className="glass-card">
-                {children}
-            </main>
-        </>
+        <main className={`glass-card ${variant === "auth" ? "glass-auth" : ""} ${className}`.trim()}>
+            {variant === "auth" && (
+                <div className="auth-bg" aria-hidden="true">
+                    <div className="orb orb-1" />
+                    <div className="orb orb-2" />
+                    <div className="orb orb-3" />
+                    <div className="orb orb-4" />
+                </div>
+            )}
+            {children}
+        </main>
     );
 }
