@@ -1,27 +1,40 @@
-/* RegisterPage - User registration with email + password */
+/* RegisterPage - clean light card: name + email + password + role tiles only */
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import GlassLayout from "../components/GlassLayout";
-import FormField from "../components/FormField";
 import Toast from "../components/Toast";
 import { registerUser } from "../api/auth";
+import { IconEmail, IconLock, IconUser, IconHeart, IconEye, IconEyeOff } from "../components/Icons";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const ROLES = [
+    { id: "PATIENT", label: "Patient", icon: <IconUser size={22} /> },
+    { id: "DONOR", label: "Donor", icon: <IconHeart size={22} /> },
+];
 
 export default function RegisterPage() {
     const navigate = useNavigate();
 
+    const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [role, setRole] = useState(null);
     const [errors, setErrors] = useState({});
     const [formError, setFormError] = useState("");
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState(null);
 
+    const clearError = (field) => {
+        if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+    };
+
     function validate() {
         const errs = {};
+        if (!fullName.trim()) {
+            errs.fullName = "Full name is required.";
+        }
         if (!email.trim()) {
             errs.email = "Email is required.";
         } else if (!EMAIL_REGEX.test(email.trim())) {
@@ -31,11 +44,11 @@ export default function RegisterPage() {
             errs.password = "Password is required.";
         } else if (password.length < 6) {
             errs.password = "Password must be at least 6 characters.";
+        } else if (password.length > 60) {
+            errs.password = "Password must be at most 60 characters.";
         }
-        if (!confirmPassword) {
-            errs.confirmPassword = "Please confirm your password.";
-        } else if (password !== confirmPassword) {
-            errs.confirmPassword = "Passwords do not match.";
+        if (!role) {
+            errs.role = "Please select a role.";
         }
         return errs;
     }
@@ -49,9 +62,14 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            await registerUser(email.trim(), password);
-            setToast({ message: "Account created! Please log in to continue.", type: "success" });
-            setTimeout(() => navigate("/"), 1200);
+            await registerUser({
+                fullName: fullName.trim(),
+                email: email.trim(),
+                password,
+                role,
+            });
+            setToast({ message: "Account created! Welcome to RedConnect.", type: "success" });
+            setTimeout(() => navigate("/home"), 1200);
         } catch (err) {
             setFormError(err.message);
         } finally {
@@ -60,88 +78,115 @@ export default function RegisterPage() {
     }
 
     return (
-        <GlassLayout>
-            <div className="glass-brand">
-                <span className="drop">🩸</span>
+        <div className="rc-auth-page">
+            <div className="rc-brand">
+                <img src="/logo.png" alt="RedConnect logo" style={{ width: 48, height: 48, objectFit: "contain" }} />
                 <h1>RedConnect</h1>
-                <p>Create your account</p>
+                <p>Blood Donation Platform</p>
             </div>
 
-            <form id="registerForm" onSubmit={handleSubmit} noValidate>
-                <FormField
-                    id="email"
-                    label="User ID (Email)"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={errors.email}
-                    autoComplete="email"
-                    autoFocus
-                />
+            <div className="rc-card">
+                <h2>Create account</h2>
+                <p className="rc-card-sub">Join RedConnect to get started</p>
 
-                <FormField
-                    id="password"
-                    label="Password"
-                    type="password"
-                    placeholder="Create a password (min. 6 characters)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    error={errors.password}
-                    autoComplete="new-password"
-                />
-
-                <FormField
-                    id="confirmPassword"
-                    label="Confirm Password"
-                    type="password"
-                    placeholder="Re-enter your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    error={errors.confirmPassword}
-                    autoComplete="new-password"
-                />
-
-                {formError && (
-                    <div className="error-msg form-error" id="formError">
-                        {formError}
+                <form id="registerForm" onSubmit={handleSubmit} noValidate>
+                    <span className="rc-label">Register As</span>
+                    <div className="rc-roles" role="group" aria-label="Register as role">
+                        {ROLES.map((r) => (
+                            <button
+                                key={r.id}
+                                type="button"
+                                className={`rc-role ${role === r.id ? "selected" : ""}`}
+                                onClick={() => { setRole(r.id); clearError("role"); }}
+                                aria-pressed={role === r.id}
+                            >
+                                {r.icon}
+                                {r.label}
+                            </button>
+                        ))}
                     </div>
-                )}
+                    {errors.role
+                        ? <span className="rc-field-error" style={{ textAlign: "center", marginTop: 8 }}>{errors.role}</span>
+                        : <p className="rc-hint">Choose how you will use RedConnect</p>}
 
-                <button
-                    type="submit"
-                    className="btn-glass btn-primary"
-                    id="registerBtn"
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <span className="btn-spinner">Creating account…</span>
-                    ) : (
-                        "Register"
-                    )}
-                </button>
-            </form>
+                    <div style={{ height: 20 }} />
 
-            <div className="divider">
-                <span>Already have an account?</span>
+                    <div className="rc-field">
+                        <label className="rc-label" htmlFor="fullName">Full Name</label>
+                        <div className="rc-input-wrap">
+                            <span className="rc-icon"><IconUser /></span>
+                            <input
+                                id="fullName"
+                                type="text"
+                                placeholder="Enter your full name"
+                                value={fullName}
+                                onChange={(e) => { setFullName(e.target.value); clearError("fullName"); }}
+                                className={errors.fullName ? "invalid" : ""}
+                                autoComplete="name"
+                                autoFocus
+                            />
+                        </div>
+                        {errors.fullName && <span className="rc-field-error">{errors.fullName}</span>}
+                    </div>
+
+                    <div className="rc-field">
+                        <label className="rc-label" htmlFor="email">Email Address</label>
+                        <div className="rc-input-wrap">
+                            <span className="rc-icon"><IconEmail /></span>
+                            <input
+                                id="email"
+                                type="email"
+                                placeholder="name@organization.com"
+                                value={email}
+                                onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+                                className={errors.email ? "invalid" : ""}
+                                autoComplete="email"
+                            />
+                        </div>
+                        {errors.email && <span className="rc-field-error">{errors.email}</span>}
+                    </div>
+
+                    <div className="rc-field">
+                        <label className="rc-label" htmlFor="password">Password</label>
+                        <div className="rc-input-wrap">
+                            <span className="rc-icon"><IconLock /></span>
+                            <input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Create a password (min. 6 characters)"
+                                value={password}
+                                onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
+                                className={errors.password ? "invalid" : ""}
+                                autoComplete="new-password"
+                                style={{ paddingRight: 44 }}
+                            />
+                            <button
+                                type="button"
+                                className="rc-eye"
+                                onClick={() => setShowPassword((s) => !s)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? <IconEyeOff /> : <IconEye />}
+                            </button>
+                        </div>
+                        {errors.password && <span className="rc-field-error">{errors.password}</span>}
+                    </div>
+
+                    {formError && <div className="rc-form-error" id="formError">{formError}</div>}
+
+                    <button type="submit" className="rc-btn" id="registerBtn" disabled={loading}>
+                        {loading ? "Creating account…" : "Create Account"}
+                    </button>
+                </form>
             </div>
 
-            <button
-                type="button"
-                className="btn-glass btn-ghost"
-                id="backToLoginBtn"
-                onClick={() => navigate("/")}
-            >
-                Back to Login
-            </button>
+            <div className="rc-footer">
+                <button type="button" id="backToLoginBtn" onClick={() => navigate("/")}>
+                    Already have an account? Sign in
+                </button>
+            </div>
 
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
-        </GlassLayout>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        </div>
     );
 }
