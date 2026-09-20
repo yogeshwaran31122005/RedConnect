@@ -7,6 +7,7 @@ import com.college.redconnect.dto.response.LoginResponse;
 import com.college.redconnect.exception.BadCredentialsException;
 import com.college.redconnect.exception.DuplicateResourceException;
 import com.college.redconnect.model.entity.User;
+import com.college.redconnect.model.entity.UserRole;
 import com.college.redconnect.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,16 +50,23 @@ class AuthServiceTest {
         saved.setId(1L);
         saved.setEmail("jane@example.com");
         saved.setPassword("hashed");
+        saved.setFullName("Jane Doe");
+        saved.setBloodGroup("O+");
+        saved.setPhone("+91 98400 12345");
+        saved.setCity("Chennai");
         when(userRepository.save(any(User.class))).thenReturn(saved);
-        when(jwtUtil.generateToken("jane@example.com")).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(anyString(), any(UserRole.class))).thenReturn("jwt-token");
         when(jwtUtil.getExpirationMs()).thenReturn(3600000L);
 
-        RegisterRequest request = new RegisterRequest("jane@example.com", "secret123");
+        RegisterRequest request = new RegisterRequest("Jane Doe", "jane@example.com", "secret123",
+                "O+", "+91 98400 12345", "Chennai", null, "Female");
         LoginResponse response = authService.register(request);
 
         assertThat(response).isNotNull();
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.email()).isEqualTo("jane@example.com");
+        assertThat(response.fullName()).isEqualTo("Jane Doe");
+        assertThat(response.bloodGroup()).isEqualTo("O+");
         verify(userRepository).save(any(User.class));
     }
 
@@ -66,7 +74,8 @@ class AuthServiceTest {
     void register_shouldThrowDuplicateWhenEmailExists() {
         when(userRepository.existsByEmail("jane@example.com")).thenReturn(true);
 
-        RegisterRequest request = new RegisterRequest("jane@example.com", "secret123");
+        RegisterRequest request = new RegisterRequest("Jane Doe", "jane@example.com", "secret123",
+                "O+", null, null, null, null);
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(DuplicateResourceException.class);
@@ -82,7 +91,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret123", "hashed")).thenReturn(true);
-        when(jwtUtil.generateToken("jane@example.com")).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(anyString(), any(UserRole.class))).thenReturn("jwt-token");
         when(jwtUtil.getExpirationMs()).thenReturn(3600000L);
 
         LoginRequest request = new LoginRequest("jane@example.com", "secret123");
