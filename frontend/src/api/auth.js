@@ -1,6 +1,8 @@
 /* ============ RedConnect - API Helper ============ */
 
-const API_BASE = "/api";
+// VITE_API_URL=https://redconnect-backend.onrender.com/api in production,
+// falls back to "/api" for local Vite proxy.
+const API_BASE = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 
 /* ---------- Session helpers ---------- */
 

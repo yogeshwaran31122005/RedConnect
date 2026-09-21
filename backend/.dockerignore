@@ -1,0 +1,11 @@
+target/
+.git/
+.gitignore
+.env
+mvnw
+mvnw.cmd
+.mvn/
+*.md
+frontend/
+docs/
+.kilo/
