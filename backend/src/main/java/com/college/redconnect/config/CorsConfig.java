@@ -13,10 +13,10 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    // Default covers local dev AND the production frontend, so a missing
-    // CORS_ORIGINS env var on Render can never cause a 403 preflight again.
+    // Production frontend only. Local dev can still allow localhost via the
+    // CORS_ORIGINS env var (comma-separated).
     // (Origin allowlisting is not access control - JWT still guards every API.)
-    @Value("${app.cors.allowed-origins:http://localhost:5173,https://redconnect-frontend.onrender.com}")
+    @Value("${app.cors.allowed-origins:https://redconnect-frontend.onrender.com}")
     private String allowedOrigins;
 
     @Bean
