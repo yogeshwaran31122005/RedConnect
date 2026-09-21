@@ -13,12 +13,15 @@ const ROLES = [
     { id: "DONOR", label: "Donor", icon: <IconHeart size={22} /> },
 ];
 
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
 export default function RegisterPage() {
     const navigate = useNavigate();
 
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [bloodGroup, setBloodGroup] = useState("O+");
     const [showPassword, setShowPassword] = useState(false);
     const [role, setRole] = useState(null);
     const [errors, setErrors] = useState({});
@@ -47,6 +50,9 @@ export default function RegisterPage() {
         } else if (password.length > 60) {
             errs.password = "Password must be at most 60 characters.";
         }
+        if (!bloodGroup) {
+            errs.bloodGroup = "Blood group is required.";
+        }
         if (!role) {
             errs.role = "Please select a role.";
         }
@@ -66,6 +72,7 @@ export default function RegisterPage() {
                 fullName: fullName.trim(),
                 email: email.trim(),
                 password,
+                bloodGroup,
                 role,
             });
             setToast({ message: "Account created! Welcome to RedConnect.", type: "success" });
@@ -108,6 +115,24 @@ export default function RegisterPage() {
                     {errors.role
                         ? <span className="rc-field-error" style={{ textAlign: "center", marginTop: 8 }}>{errors.role}</span>
                         : <p className="rc-hint">Choose how you will use RedConnect</p>}
+
+                    <div className="rc-field">
+                        <label className="rc-label" htmlFor="bloodGroup">Blood Group</label>
+                        <div className="rc-input-wrap" style={{ paddingLeft: 12 }}>
+                            <select
+                                id="bloodGroup"
+                                value={bloodGroup}
+                                onChange={(e) => { setBloodGroup(e.target.value); clearError("bloodGroup"); }}
+                                className={errors.bloodGroup ? "invalid" : ""}
+                                style={{ width: "100%", border: "none", background: "transparent", fontSize: 18, color: "#1e293b", padding: "12px 10px" }}
+                            >
+                                {BLOOD_GROUPS.map((group) => (
+                                    <option key={group} value={group}>{group}</option>
+                                ))}
+                            </select>
+                        </div>
+                        {errors.bloodGroup && <span className="rc-field-error">{errors.bloodGroup}</span>}
+                    </div>
 
                     <div style={{ height: 20 }} />
 
