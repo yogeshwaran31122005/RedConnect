@@ -106,11 +106,17 @@ export async function apiRequest(path, options = {}) {
     // Log full error payload to console for debugging (helps trace "Something went wrong")
     if (!response.ok) {
         console.error(`[RedConnect] API ${response.status} ${path}`, data);
+
+        const fieldErrorMessage = data.fieldErrors
+            ? Object.values(data.fieldErrors).find(Boolean)
+            : null;
+
         const message =
+            fieldErrorMessage ||
             data.message ||
-            (data.fieldErrors ? Object.values(data.fieldErrors)[0] : null) ||
             data.error ||
             `Request failed (${response.status}). Please try again.`;
+
         const error = new Error(message);
         error.status = response.status;
         error.payload = data;
