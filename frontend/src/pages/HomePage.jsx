@@ -13,6 +13,7 @@ import {
     getAllUsers,
     getAllRequests,
     getAppLogs,
+    isPending,
 } from "../api/data";
 import {
     IconDashboard, IconProfile, IconHeart,
@@ -104,10 +105,10 @@ export default function HomePage() {
 
     const tabs = TABS[role] || TABS.DONOR;
     const pendingCount = role === "PATIENT"
-        ? requests.filter((r) => r.status === "Pending").length
+        ? requests.filter((r) => isPending(r.status)).length
         : role === "DONOR"
-            ? incoming.filter((r) => r.status === "Pending").length
-            : allRequests.filter((r) => r.status === "Pending").length;
+            ? incoming.filter((r) => isPending(r.status)).length
+            : allRequests.filter((r) => isPending(r.status)).length;
 
     const tabBadge = (id) => {
         if (id === "requests" && pendingCount > 0) return pendingCount;

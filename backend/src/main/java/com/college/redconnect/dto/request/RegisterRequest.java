@@ -23,6 +23,7 @@ public record RegisterRequest(
         @Size(min = 6, max = 60, message = "Password must be between 6 and 60 characters")
         String password,
 
+        @NotBlank(message = "Blood group is required")
         @Pattern(regexp = "^(A|B|AB|O)[+-]$", message = "Blood group must be a valid group like A+, B-, O+, AB+")
         String bloodGroup,
 

@@ -104,7 +104,7 @@ public class DataService {
         entity.setHospitalName(request.hospitalName());
         entity.setContactNumber(request.contactNumber());
         entity.setNotes(request.notes());
-        entity.setStatus("Pending");
+        entity.setStatus("PENDING");
         entity.setCreatedDate(LocalDate.now());
         return bloodRequestRepository.save(entity);
     }
@@ -133,7 +133,7 @@ public class DataService {
         entity.setHospitalName(request.hospitalName() != null ? request.hospitalName() : patient.getCity());
         entity.setContactNumber(patient.getPhone());
         entity.setNotes(request.notes());
-        entity.setStatus("Pending");
+        entity.setStatus("PENDING");
         entity.setCreatedDate(LocalDate.now());
         entity.setDonorEmail(donor.getEmail());
         entity.setDonorName(donor.getFullName());
@@ -156,39 +156,70 @@ public class DataService {
     }
 
     /**
+     * Donor clicks AVAILABLE / ACCEPT REQUEST.
+     * PUT /api/donor-requests/{requestId}/accept
+     * Verifies request + donor, sets status=ACCEPTED, saves to PostgreSQL,
+     * notifies the patient and returns the updated request.
+     */
+    public BloodRequest acceptDonorRequest(String donorEmail, Long requestId) {
+        return setDonorResponse(donorEmail, requestId, "ACCEPTED");
+    }
+
+    /**
+     * Donor clicks NOT AVAILABLE.
+     * PUT /api/donor-requests/{requestId}/reject
+     * Sets status=REJECTED, saves to PostgreSQL and notifies the patient.
+     */
+    public BloodRequest rejectDonorRequest(String donorEmail, Long requestId) {
+        return setDonorResponse(donorEmail, requestId, "REJECTED");
+    }
+
+    /**
      * Donor clicks Available (Accept) or Not Available (Decline).
-     * If Accepted, the patient's request page will show the donor details.
+     * Legacy alias for PATCH /api/data/requests/{id}/respond.
+     * Accepts both legacy ("Accepted"/"Available") and canonical
+     * ("ACCEPTED"/"REJECTED") status values for robustness.
      */
     public BloodRequest respondToRequest(String donorEmail, Long id, StatusUpdate update) {
+        return setDonorResponse(donorEmail, id, normalizeResponseStatus(update == null ? null : update.status()));
+    }
+
+    private BloodRequest setDonorResponse(String donorEmail, Long id, String status) {
+        if (id == null) {
+            throw new IllegalArgumentException("Request id is required");
+        }
         BloodRequest request = bloodRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Blood request not found"));
-        // Normalize emails for comparison (stored lower-cased, but guard against null/case)
+        // Verify the donor exists (401/404 if unknown)
+        User donor = requireUser(donorEmail);
+        if (donor.getRole() != UserRole.DONOR) {
+            throw new ResourceNotFoundException("Blood request not found");
+        }
+        // Verify this request was actually sent to this donor (404 to avoid leaking other rows)
         String storedDonor = request.getDonorEmail() == null ? null : request.getDonorEmail().trim().toLowerCase();
-        String callerDonor = donorEmail == null ? null : donorEmail.trim().toLowerCase();
+        String callerDonor = donor.getEmail() == null ? null : donor.getEmail().trim().toLowerCase();
         if (storedDonor == null || !storedDonor.equals(callerDonor)) {
             throw new ResourceNotFoundException("Blood request not found");
         }
-        String status = update.status() == null ? "" : update.status().trim();
-        // Accept both legacy "Available"/"Not Available" and canonical "Accepted"/"Declined" for robustness
-        if (status.equalsIgnoreCase("Available")) status = "Accepted";
-        else if (status.equalsIgnoreCase("Not Available") || status.equalsIgnoreCase("NotAvailable")) status = "Declined";
-        if (!status.equals("Accepted") && !status.equals("Declined")) {
-            throw new ResourceNotFoundException("Status must be Accepted or Declined");
-        }
         // Idempotency: if already in target status, just return without side-effects
-        if (status.equals(request.getStatus())) {
+        if (status.equalsIgnoreCase(request.getStatus())) {
             return request;
         }
         request.setStatus(status);
+        // Refresh the donor snapshot so the patient sees current contact details after accept
+        if (status.equals("ACCEPTED")) {
+            request.setDonorName(donor.getFullName());
+            request.setDonorPhone(donor.getPhone());
+            request.setDonorCity(donor.getCity());
+        }
         BloodRequest saved = bloodRequestRepository.save(request);
 
         // Notify the patient in the database - failure here should not roll back status change
         try {
-            User donor = requireUser(donorEmail);
             Notification patientNotif = new Notification();
             patientNotif.setUserEmail(request.getUserEmail());
-            patientNotif.setType(status.equals("Accepted") ? "match" : "info");
-            if (status.equals("Accepted")) {
+            patientNotif.setType(status.equals("ACCEPTED") ? "match" : "info");
+            if (status.equals("ACCEPTED")) {
                 String phone = donor.getPhone() != null ? donor.getPhone() : "N/A";
                 String city = donor.getCity() != null ? donor.getCity() : "N/A";
                 patientNotif.setTitle("Donor accepted your request");
@@ -196,7 +227,8 @@ public class DataService {
                         + city + ") is Available. Contact: " + phone);
             } else {
                 patientNotif.setTitle("Donor is not available");
-                patientNotif.setMessage("Donor " + donor.getFullName() + " marked your request as Not Available.");
+                patientNotif.setMessage("Donor " + donor.getFullName()
+                        + " is currently not available.");
             }
             patientNotif.setNotificationDate(LocalDate.now());
             patientNotif.setRead(false);
@@ -207,7 +239,7 @@ public class DataService {
         }
 
         // If accepted, record a donation row for the donor - also best-effort
-        if (status.equals("Accepted")) {
+        if (status.equals("ACCEPTED")) {
             try {
                 Donation donation = new Donation();
                 donation.setUserEmail(donorEmail);
@@ -224,6 +256,19 @@ public class DataService {
         }
 
         return saved;
+    }
+
+    /**
+     * Normalizes every accepted spelling of a donor response to the canonical
+     * uppercase status (ACCEPTED / REJECTED). Throws IllegalArgumentException
+     * (→ HTTP 400) for anything else instead of a misleading 404.
+     */
+    private String normalizeResponseStatus(String raw) {
+        String status = raw == null ? "" : raw.trim();
+        if (status.equalsIgnoreCase("Accepted") || status.equalsIgnoreCase("Available")) return "ACCEPTED";
+        if (status.equalsIgnoreCase("Declined") || status.equalsIgnoreCase("Rejected")
+                || status.equalsIgnoreCase("Not Available") || status.equalsIgnoreCase("NotAvailable")) return "REJECTED";
+        throw new IllegalArgumentException("Status must be ACCEPTED or REJECTED");
     }
 
     public BloodRequest updateRequestStatus(String email, Long id, StatusUpdate update) {

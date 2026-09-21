@@ -97,6 +97,106 @@ export async function respondToRequest(id, status) {
     return result.data;
 }
 
+/* ---------- Donor request workflow (PUT /api/donor-requests/...) ---------- */
+
+/** Canonical status helper — backend stores PENDING / ACCEPTED / REJECTED
+ *  (legacy rows may hold Pending / Accepted / Declined). */
+export function normStatus(status) {
+    const s = (status || "").trim().toUpperCase();
+    if (s === "ACCEPTED") return "ACCEPTED";
+    if (s === "REJECTED" || s === "DECLINED") return "REJECTED";
+    if (s === "PENDING") return "PENDING";
+    if (s === "COMPLETED") return "COMPLETED";
+    if (s === "CANCELLED" || s === "CANCELED") return "CANCELLED";
+    return s || "UNKNOWN";
+}
+
+export function isPending(status) {
+    return normStatus(status) === "PENDING";
+}
+
+export function isAccepted(status) {
+    return normStatus(status) === "ACCEPTED";
+}
+
+/** User-friendly message for API failures — never a blank page / raw 404. */
+export function friendlyRequestError(err, action = "process this request") {
+    const status = err?.status;
+    if (status === 404) return "Unable to accept this request. Please try again. (Request or endpoint not found)";
+    if (status === 400) return err.message || `Invalid request. Could not ${action}.`;
+    if (status === 401) return "Your session expired. Please log in again.";
+    if (status === 403) return "Access denied. You are not allowed to respond to this request.";
+    if (status === 500) return "Server error. Please try again in a moment.";
+    if (status === 0) return "Cannot reach the server. Is the backend running on port 8080?";
+    return err?.message || `Unable to ${action}. Please try again.`;
+}
+
+/**
+ * Donor clicks AVAILABLE / ACCEPT REQUEST.
+ * Calls PUT /api/donor-requests/{requestId}/accept and returns the
+ * updated request. Falls back to the legacy PATCH endpoint if the new
+ * route is unavailable, so the button never dead-ends on a 404.
+ */
+export async function acceptDonorRequest(requestId) {
+    if (requestId == null) {
+        const error = new Error("Invalid request id.");
+        error.status = 400;
+        throw error;
+    }
+    try {
+        const result = await apiRequest(`/donor-requests/${requestId}/accept`, { method: "PUT" });
+        return result.data?.request || result.data;
+    } catch (err) {
+        if (isEndpointMissing(err)) {
+            // Endpoint itself missing (e.g. stale backend) — retry legacy route once.
+            const legacy = await apiRequest(`/data/requests/${requestId}/respond`, {
+                method: "PATCH",
+                body: JSON.stringify({ status: "ACCEPTED" }),
+            });
+            return legacy.data;
+        }
+        throw err;
+    }
+}
+
+/**
+ * Donor clicks NOT AVAILABLE.
+ * Calls PUT /api/donor-requests/{requestId}/reject (status = REJECTED).
+ */
+export async function rejectDonorRequest(requestId) {
+    if (requestId == null) {
+        const error = new Error("Invalid request id.");
+        error.status = 400;
+        throw error;
+    }
+    try {
+        const result = await apiRequest(`/donor-requests/${requestId}/reject`, { method: "PUT" });
+        return result.data?.request || result.data;
+    } catch (err) {
+        if (isEndpointMissing(err)) {
+            const legacy = await apiRequest(`/data/requests/${requestId}/respond`, {
+                method: "PATCH",
+                body: JSON.stringify({ status: "REJECTED" }),
+            });
+            return legacy.data;
+        }
+        throw err;
+    }
+}
+
+/**
+ * True when the 404 came from a missing endpoint (wrong URL / stale backend)
+ * rather than a missing blood-request row. A missing row reports
+ * "Blood request not found"; a missing route reports "Resource not found"
+ * with the request path pointing at /donor-requests/.
+ */
+function isEndpointMissing(err) {
+    if (err?.status !== 404) return false;
+    const path = String(err.payload?.path || "");
+    if (path.includes("/donor-requests/")) return true;
+    return !String(err.message || "").toLowerCase().includes("blood request");
+}
+
 /* ---------- Notifications ---------- */
 
 export async function getNotifications() {

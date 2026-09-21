@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { IconUsers, IconShield, IconPhone, IconLocation, IconCalendar, IconFileText } from "../components/Icons";
-import { deleteUser } from "../api/data";
+import { deleteUser, isPending, isAccepted } from "../api/data";
 
 function Head({ title, sub, badge }) {
     return (
@@ -21,7 +21,7 @@ export default function AdminDashboard({ activeTab, profile, users, setUsers, al
     const name = profile?.name || profile?.fullName || "Admin";
     const patients = users.filter((u) => (u.role || "").toUpperCase() === "PATIENT").length;
     const donors = users.filter((u) => (u.role || "").toUpperCase() === "DONOR").length;
-    const pending = allRequests.filter((r) => r.status === "Pending").length;
+    const pending = allRequests.filter((r) => isPending(r.status)).length;
     const [deleting, setDeleting] = useState(null);
 
     const handleDelete = async (id, email) => {
@@ -83,7 +83,7 @@ export default function AdminDashboard({ activeTab, profile, users, setUsers, al
                 <div className="dash-grid">
                     {allRequests.length === 0 && <div className="dash-empty">No requests in database.<small>Patient emergency requests appear here.</small></div>}
                     {allRequests.slice().reverse().map((r) => (
-                        <div className={`dash-card ${r.status === "Accepted" ? "hbar-green" : r.status === "Pending" ? "" : "hbar-gray"}`} key={r.id}>
+                        <div className={`dash-card ${isAccepted(r.status) ? "hbar-green" : isPending(r.status) ? "" : "hbar-gray"}`} key={r.id}>
                             <div className="dash-card-title"><span className="dash-blood">{r.bloodGroup}</span>
                                 <span className={`dash-status ${(r.status || "pending").toLowerCase()}`}>{r.status}</span>
                             </div>

@@ -3,7 +3,7 @@
    profile: editable profile form */
 
 import { BLOOD_GROUPS } from "../api/constants";
-import { saveProfile, updateAvailability, respondToRequest, getIncomingRequests } from "../api/data";
+import { saveProfile, updateAvailability, acceptDonorRequest, rejectDonorRequest, getIncomingRequests, isPending, isAccepted, friendlyRequestError } from "../api/data";
 import { IconHeart, IconShield, IconFileText, IconCalendar, IconChevronRight } from "../components/Icons";
 
 function Head({ title, sub, badge }) {
@@ -22,8 +22,8 @@ function Badge({ icon, text, tone = "" }) {
 export default function DonorDashboard({ activeTab, goTab, profile, setProfile, incoming, setIncoming, showToast }) {
     const name = profile?.name || profile?.fullName || "Donor";
     const isAvailable = (profile?.availability || "Available") === "Available";
-    const pending = incoming.filter((r) => r.status === "Pending");
-    const acceptedCount = incoming.filter((r) => r.status === "Accepted").length;
+    const pending = incoming.filter((r) => isPending(r.status));
+    const acceptedCount = incoming.filter((r) => isAccepted(r.status)).length;
 
     const updateField = (key) => (e) => setProfile((p) => ({ ...p, [key]: e.target.value }));
 
@@ -48,28 +48,34 @@ export default function DonorDashboard({ activeTab, goTab, profile, setProfile, 
         }
     };
 
-    const respond = async (id, status) => {
+    /* Donor clicks AVAILABLE / ACCEPT REQUEST (or NOT AVAILABLE).
+       Calls PUT /api/donor-requests/{requestId}/accept|reject — never a dead 404. */
+    const respond = async (id, accepted) => {
         if (id == null) {
             showToast("Invalid request id.", "error");
             return;
         }
-        // Normalize status defensively so stale UI strings like "Available" still work
-        const normalized = status === "Available" ? "Accepted" : status === "Not Available" ? "Declined" : status;
         try {
-            await respondToRequest(id, normalized);
+            if (accepted) {
+                await acceptDonorRequest(id);
+            } else {
+                await rejectDonorRequest(id);
+            }
             try {
                 const refreshed = await getIncomingRequests();
                 setIncoming(refreshed);
             } catch (refreshErr) {
-                // Status already updated on server; refresh failure is secondary
+                // Status already updated on server; refresh failure is secondary.
+                // Drop the answered row locally so the pending list stays correct.
                 console.error("[DonorDashboard] refresh incoming failed", refreshErr);
-                showToast(normalized === "Accepted" ? "Marked Available — patient can now see your details. (refresh failed)" : "Marked Not Available. (refresh failed)", "error");
+                setIncoming((prev) => prev.filter((r) => r.id !== id));
+                showToast(accepted ? "Request Accepted — patient can now see your details. (list refresh failed)" : "Marked Not Available. (list refresh failed)", "error");
                 return;
             }
-            showToast(normalized === "Accepted" ? "Marked Available — patient can now see your details." : "Marked Not Available.");
+            showToast(accepted ? "Request Accepted — patient can now see your details." : "Marked Not Available. Patient has been notified.");
         } catch (err) {
             console.error("[DonorDashboard] respond failed", err);
-            showToast(err.message || `Could not respond (${err.status || "unknown"}).`, "error");
+            showToast(friendlyRequestError(err, accepted ? "accept this request" : "decline this request"), "error");
         }
     };
 
@@ -83,17 +89,20 @@ export default function DonorDashboard({ activeTab, goTab, profile, setProfile, 
                         <div className="dash-empty">No patient requests yet.<small>When a patient clicks Emergency on your card, it appears here.</small></div>
                     )}
                     {incoming.slice().reverse().map((r) => (
-                        <div className={`dash-card ${r.status === "Accepted" ? "hbar-green" : r.status === "Pending" ? "" : "hbar-gray"}`} key={r.id}>
+                        <div className={`dash-card ${isAccepted(r.status) ? "hbar-green" : isPending(r.status) ? "" : "hbar-gray"}`} key={r.id}>
                             <div className="dash-card-title"><span className="dash-blood">{r.bloodGroup}</span>
                                 <span className={`dash-status ${(r.status || "pending").toLowerCase()}`}>{r.status}</span>
                             </div>
                             <div className="dash-card-sub">From: {r.userEmail}</div>
                             <div className="dash-meta"><IconHeart size={16} />{r.units} unit(s) · {r.urgency || "Emergency"}</div>
                             <div className="dash-meta"><IconCalendar size={16} />{r.date || r.createdDate} · {r.location || r.hospitalName || "—"}</div>
-                            {r.status === "Pending" && (
+                            {isAccepted(r.status) && (
+                                <div className="dash-meta" style={{ color: "var(--rc-green, #15803d)", fontWeight: 600 }}>Request Accepted — patient notified.</div>
+                            )}
+                            {isPending(r.status) && (
                                 <div className="dash-card-actions">
-                                    <button className="dash-btn dash-btn-green" onClick={() => respond(r.id, "Accepted")}>Available</button>
-                                    <button className="dash-btn dash-btn-ghost" onClick={() => respond(r.id, "Declined")}>Not Available</button>
+                                    <button className="dash-btn dash-btn-green" onClick={() => respond(r.id, true)}>Available</button>
+                                    <button className="dash-btn dash-btn-ghost" onClick={() => respond(r.id, false)}>Not Available</button>
                                 </div>
                             )}
                         </div>

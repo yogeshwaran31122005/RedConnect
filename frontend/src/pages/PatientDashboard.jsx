@@ -2,8 +2,9 @@
    dashboard: stats + how-it-works | donors: matching donor cards + Emergency
    requests: my requests with donor details | profile: editable profile form */
 
+import { useState } from "react";
 import { BLOOD_GROUPS } from "../api/constants";
-import { saveProfile, sendDonorRequest, updateRequestStatus, getRequests, getMatchingDonors } from "../api/data";
+import { saveProfile, sendDonorRequest, updateRequestStatus, getRequests, getMatchingDonors, isPending, isAccepted, normStatus, friendlyRequestError } from "../api/data";
 import { IconHeart, IconShield, IconPhone, IconLocation, IconCalendar, IconEmergency, IconChevronRight } from "../components/Icons";
 
 function Head({ title, sub, badge }) {
@@ -21,8 +22,9 @@ function Badge({ icon, text, tone = "" }) {
 
 export default function PatientDashboard({ activeTab, goTab, profile, setProfile, donors, setDonors, requests, setRequests, showToast }) {
     const name = profile?.name || profile?.fullName || "Patient";
-    const pending = requests.filter((r) => r.status === "Pending").length;
-    const accepted = requests.filter((r) => r.status === "Accepted").length;
+    const pending = requests.filter((r) => isPending(r.status)).length;
+    const accepted = requests.filter((r) => isAccepted(r.status)).length;
+    const [expandedDonor, setExpandedDonor] = useState(null);
 
     const updateField = (key) => (e) => setProfile((p) => ({ ...p, [key]: e.target.value }));
 
@@ -45,7 +47,7 @@ export default function PatientDashboard({ activeTab, goTab, profile, setProfile
             showToast(`Emergency request sent to ${donor.fullName || donor.name}.`);
             goTab("requests");
         } catch (err) {
-            showToast(err.message || "Could not send request.", "error");
+            showToast(friendlyRequestError(err, "send this request"), "error");
         }
     };
 
@@ -55,9 +57,19 @@ export default function PatientDashboard({ activeTab, goTab, profile, setProfile
             setRequests(await getRequests());
             showToast("Request cancelled.");
         } catch (err) {
-            showToast(err.message || "Could not cancel.", "error");
+            showToast(friendlyRequestError(err, "cancel this request"), "error");
         }
     };
+
+    /* Patient-visible pipeline: PENDING → DONOR NOTIFIED → DONOR ACCEPTED → DONOR DETAILS AVAILABLE */
+    const pipelineStage = (r) => {
+        const s = normStatus(r.status);
+        if (s === "ACCEPTED") return 3;
+        if (s === "REJECTED" || s === "CANCELLED") return -1;
+        return r.donorEmail ? 1 : 0; // created → donor notified once routed to a donor
+    };
+
+    const pipelineLabels = ["Pending", "Donor Notified", "Donor Accepted", "Donor Details Available"];
 
     if (activeTab === "donors") {
         return (
@@ -103,26 +115,56 @@ export default function PatientDashboard({ activeTab, goTab, profile, setProfile
                     {requests.length === 0 && (
                         <div className="dash-empty">No requests yet.<small>Send an Emergency request from Matching Donors.</small></div>
                     )}
-                    {requests.slice().reverse().map((r) => (
-                        <div className={`dash-card ${(r.status === "Pending" || r.status === "Accepted") ? "" : "hbar-gray"}`} key={r.id}>
+                    {requests.slice().reverse().map((r) => {
+                        const acceptedNow = isAccepted(r.status);
+                        const pendingNow = isPending(r.status);
+                        const stage = pipelineStage(r);
+                        const expanded = expandedDonor === r.id;
+                        return (
+                        <div className={`dash-card ${(pendingNow || acceptedNow) ? "" : "hbar-gray"}`} key={r.id}>
                             <div className="dash-card-title"><span className="dash-blood">{r.bloodGroup}</span>
                                 <span className={`dash-status ${(r.status || "pending").toLowerCase()}`}>{r.status}</span>
                             </div>
-                            <div className="dash-card-sub">Donor: {r.donorName || "Waiting for donor…"}</div>
-                            {r.status === "Accepted" && (
+                            <div className="dash-card-sub">Donor: {acceptedNow ? (r.donorName || "Donor") : (r.donorName || "Waiting for donor…")}</div>
+                            {/* Request pipeline */}
+                            <div className="dash-meta" style={{ flexWrap: "wrap" }}>
+                                {stage === -1
+                                    ? <span>{normStatus(r.status) === "REJECTED" ? "Donor is currently not available." : "Request cancelled."}</span>
+                                    : pipelineLabels.slice(0, stage + 1).join(" → ")}
+                            </div>
+                            {acceptedNow && (
                                 <>
+                                    <div className="dash-meta" style={{ fontWeight: 700, color: "var(--rc-green, #15803d)" }}>DONOR ACCEPTED</div>
+                                    <div className="dash-meta">Donor Name: {r.donorName || "—"}</div>
+                                    <div className="dash-meta">Blood Group: {r.bloodGroup || "—"}</div>
                                     <div className="dash-meta"><IconPhone size={16} />{r.donorPhone || "—"}</div>
-                                    <div className="dash-meta"><IconLocation size={16} />{r.donorCity || "—"} · {r.donorEmail || ""}</div>
+                                    <div className="dash-meta"><IconLocation size={16} />{r.donorCity || "—"}{r.donorEmail ? ` · ${r.donorEmail}` : ""}</div>
+                                    <div className="dash-meta">Availability: Available</div>
+                                    <div className="dash-card-actions">
+                                        <button className="dash-btn dash-btn-ghost" onClick={() => setExpandedDonor(expanded ? null : r.id)}>
+                                            {expanded ? "Hide Donor Details" : "View Donor Details"}
+                                        </button>
+                                    </div>
+                                    {expanded && (
+                                        <div className="dash-meta" style={{ display: "block", lineHeight: 1.7 }}>
+                                            <div>Donor Name: {r.donorName || "—"}</div>
+                                            <div>Blood Group: {r.bloodGroup || "—"}</div>
+                                            <div>Phone Number: {r.donorPhone || "—"}</div>
+                                            <div>Location: {r.donorCity || r.location || "—"}</div>
+                                            {r.donorEmail && <div>Email: {r.donorEmail}</div>}
+                                        </div>
+                                    )}
                                 </>
                             )}
                             <div className="dash-meta"><IconCalendar size={16} />{r.date || r.createdDate} · {r.units} unit(s)</div>
-                            {r.status === "Pending" && (
+                            {pendingNow && (
                                 <div className="dash-card-actions">
                                     <button className="dash-btn-ghost dash-btn" onClick={() => handleCancel(r.id)}>Cancel Request</button>
                                 </div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </>
         );

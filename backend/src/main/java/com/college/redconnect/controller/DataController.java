@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -112,8 +113,8 @@ public class DataController {
         return ResponseEntity.ok(ApiResponse.ok("Request status updated", saved));
     }
 
-    /** Donor clicks Available (Accepted) or Not Available (Declined). */
-    @PatchMapping("/requests/{id}/respond")
+    /** Donor clicks Available (Accepted) or Not Available (Declined). PUT accepted as alias for PATCH. */
+    @RequestMapping(value = "/requests/{id}/respond", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<ApiResponse> respondToRequest(Authentication authentication,
                                                         @PathVariable Long id,
                                                         @Valid @RequestBody StatusUpdate update) {

@@ -123,7 +123,7 @@ class DataControllerTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.status").value("Pending"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
 
         mockMvc.perform(get("/api/data/requests")
                         .header("Authorization", bearer()))
