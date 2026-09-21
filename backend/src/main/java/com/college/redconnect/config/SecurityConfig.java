@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_PATHS = {
+            "/",
+            "/api/health",
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/admin/send-otp",

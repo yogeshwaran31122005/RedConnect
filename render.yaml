@@ -1,0 +1,31 @@
+# RedConnect - Render Blueprint (one-click deploy config).
+# Render dashboard -> New -> Blueprint -> select this repo.
+# Fill in the `sync: false` values in the dashboard; secrets are never committed.
+services:
+  - type: web
+    name: redconnect-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    # Must return 200 (served by HealthController, no DB access).
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 10000
+      # JDBC format! Convert Render's Internal Database URL:
+      #   postgresql://USER:PASS@HOST/DB  ->  jdbc:postgresql://HOST:5432/DB?sslmode=require
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+
+databases:
+  - name: redconnect-db
+    databaseName: redconnect
+    user: redconnect_user
