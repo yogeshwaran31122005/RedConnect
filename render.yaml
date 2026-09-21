@@ -25,6 +25,27 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
+  # Static frontend (React + Vite SPA).
+  # The rewrite below is the code version of Dashboard -> Redirects/Rewrites:
+  #   /* -> /index.html (Rewrite). Required for BrowserRouter deep links
+  #   like /register - without it the host returns 404 instead of index.html.
+  - type: web
+    name: redconnect-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install; npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Build-time var: must point at the BACKEND service.
+      # e.g. https://redconnect-backend.onrender.com/api (no trailing slash issues -
+      # the app strips it). Changing it requires a frontend rebuild/redeploy.
+      - key: VITE_API_URL
+        sync: false
+
 databases:
   - name: redconnect-db
     databaseName: redconnect
