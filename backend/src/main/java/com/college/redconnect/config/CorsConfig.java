@@ -13,18 +13,24 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173}")
+    // Default covers local dev AND the production frontend, so a missing
+    // CORS_ORIGINS env var on Render can never cause a 403 preflight again.
+    // (Origin allowlisting is not access control - JWT still guards every API.)
+    @Value("${app.cors.allowed-origins:http://localhost:5173,https://redconnect-frontend.onrender.com}")
     private String allowedOrigins;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Trim entries: "https://a.com, http://localhost:5173" must match exactly,
-        // a stray space after the comma otherwise breaks the origin check -> 403.
+        // Normalize entries: exact match is required, so a stray space after a
+        // comma or a trailing slash ("https://x.onrender.com/") otherwise
+        // breaks the origin check -> 403 on preflight.
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
+                .map(s -> s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
                 .toList();
+        System.out.println("[CORS] Allowed origins: " + origins);
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
