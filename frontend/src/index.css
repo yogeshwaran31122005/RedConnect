@@ -2213,7 +2213,8 @@ body:has(.rc-auth-page) #root {
     color: #2563eb;
 }
 
-.rc-field input {
+.rc-field input,
+.rc-field select {
     width: 100%;
     padding: 12px 14px 12px 42px;
     border: 1.5px solid #e2e8f0;
@@ -2230,7 +2231,17 @@ body:has(.rc-auth-page) #root {
     color: #9ca3af;
 }
 
-.rc-field input:focus {
+.rc-field select {
+    padding-left: 14px;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
+    background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+
+.rc-field input:focus,
+.rc-field select:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
@@ -2377,12 +2388,41 @@ body:has(.rc-auth-page) #root {
 }
 
 @media (max-width: 480px) {
+    body:has(.rc-auth-page) {
+        padding: 18px 12px 28px;
+    }
+
+    .rc-auth-page {
+        max-width: 100%;
+    }
+
     .rc-card {
-        padding: 24px 20px;
+        padding: 22px 16px;
     }
 
     .rc-brand h1 {
         font-size: 24px;
+    }
+
+    .rc-roles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .rc-role {
+        min-height: 78px;
+        padding: 12px 8px 10px;
+    }
+
+    .rc-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .rc-field input,
+    .rc-field select {
+        font-size: 16px;
     }
 }
 
