@@ -17,8 +17,13 @@ public class HealthController {
         return Map.of("status", "UP", "service", "redconnect");
     }
 
+    @GetMapping("/health")
+    public String health() {
+        return "RedConnect Backend is running";
+    }
+
     @GetMapping("/api/health")
-    public Map<String, String> health() {
+    public Map<String, String> apiHealth() {
         return Map.of("status", "UP");
     }
 }
